@@ -1,79 +1,66 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.techindicators import TechIndicators
+from plotly.subplots import make_subplots
 import datetime as dt
 import mplfinance as mpf
+from tiingo import TiingoClient
 from datetime import datetime, timedelta
 
 # print((datetime.today() - timedelta(days=5)).date()) # gets the date 5 days before today
 
+
+chartDays = 10
+timeDiff = 6
+
 ticker = input('Enter a ticker ').upper()
+
 key = open('api_key.txt').read()
+config = {}
 
-"""
-ta = TechIndicators(key, output_format='pandas')
-rsiData, taMeta = ta.get_rsi(ticker, interval='1min', time_period=60, series_type='close')
-"""
+config['session'] = True
+config['api_key'] = "8e0be47061fc0cc55149cd88aa4aa5843e31b4c8"
 
-ts = TimeSeries(key, output_format='pandas')
-"""
-priceData, tsMeta = ts.get_daily(ticker, outputsize='full')
-***For getting daily stock candles***
-"""
+client = TiingoClient(config)
 
-priceData, tsMeta = ts.get_intraday(ticker, interval='5min', outputsize='full')
-# ***For getting daily stock candles***
+priceData = client.get_dataframe(ticker, startDate='2021-08-10', endDate='2021-08-16', frequency='1min')
+print(priceData.head())
 
-priceData.columns = ['open', 'high', 'low', 'close', 'volume']
+priceData.columns = ['close', 'high', 'low', 'open']
+
 priceData['TradeDate'] = priceData.index.date
 priceData['time'] = priceData.index.time
-priceData['date'] = priceData.index
+
+# Adjusts times for different time zones
+priceData['date'] = priceData.index - timedelta(hours=timeDiff)
 priceData.sort_index(inplace=True)
 
-priceData = priceData.loc[(datetime.today() - timedelta(days=5)).date():]  # picks start date of data
-# priceData['20wma'] = priceData['close'].rolling(window=140).mean()  # Creates 20 day moving average from the dail candles uses140 because 20 week x 7 day/week = 140
+# priceData = priceData.loc[(datetime.today() - timedelta(days=chartDays)).date():]  # picks start date of data
+
+# Create subplots and mention plot grid size
+
+
+"""
+ fig.add_trace(go.Bar(x=priceData['date'], y=priceData['volume'], showlegend=False, marker_color='rgb(255,255,255)'),
+             row=2, col=1)   
+             #adds volume sublot below
+"""
+# Creating the candlestick chart without volume subplot
+
 
 fig = go.Figure(data=[go.Candlestick(x=priceData['date'], open=priceData['open'], high=priceData['high'],
                                      low=priceData['low'], close=priceData['close'])])
-# fig.add_trace(go.Scatter(x=priceData['TradeDate'], y=priceData['20wma'], line=dict(color='#e0e0e0'), name="20 Week Moving Average"))
 
 fig.update_xaxes(
+    rangeslider_visible=False,
     rangebreaks=[
-        dict(bounds=['sat', 'mon'])
-        # hide weekends
+        # NOTE: Below values are bound (not single values), ie. hide x to y
+        dict(bounds=["sat", "mon"]),  # hide weekends, eg. hide sat to before mon
+        dict(bounds=[14, 7.5], pattern="hour"),  # hide hours outside of 9.30am-4pm
+        # dict(values=["2020-12-25", "2021-01-01"])  # hide holidays (Christmas and New Year's, etc)
     ]
 )
 
-fig.update_xaxes(
-    rangebreaks=[
-        dict(bounds=[20, 4], pattern='hour')
-        # hide non market hours
-    ]
-)
-
-fig.update_layout(xaxis_rangeslider_visible=False, template='plotly_dark')
-fig.update_layout(yaxis_title=ticker + " price (USD)", xaxis_title="Time")
+fig.update_layout(title=ticker + ' Analysis', template='plotly_dark', yaxis_title=ticker + " price (USD)")
 fig.show()
-
-"""
-colors = mpf.make_marketcolors(up='#00ff00', down='#ff0000', wick='inherit', edge='inherit', volume='in')
-mpfStyle = mpf.make_mpf_style(base_mpf_style='nightclouds', marketcolors=colors)
-mpf.plot(priceData, type="candle", style=mpfStyle, volume=True)
-"""
-
-"""
-columns = ['open', 'high', 'low', 'close', 'volume']
-priceData.columns = columns
-priceData['TradeDate'] = priceData.index.date
-priceData['time'] = priceData.index.time
-
-# print(data.loc['2021-7-16'])
-
-market = priceData.between_time('07:30:30', '14:00:00').copy()
-market.sort_index(inplace=True)
-# print(market.info())
-# print(market.groupby('TradeDate').agg({'low':min, 'high':max}))       gets high & low
-# print(market.loc[market.groupby('TradeDate')['low'].idxmin()])      shows time stamp of the daily lows with the high,open and other data shown at that same time stamp
-# print(market.loc[market.groupby('TradeDate')['low'].idxmax()])    # same as above but for max """
