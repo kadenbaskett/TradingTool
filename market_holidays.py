@@ -17,5 +17,6 @@ class BankHolidayCalendar(AbstractHolidayCalendar):
     ]
 
 
-calendar = BankHolidayCalendar()
-print(calendar.holidays(start='2021-01-01', end='2024-12-31'))
+marketCalendar = BankHolidayCalendar()
+holidays = marketCalendar.holidays(start='2021-01-01', end='2024-12-31')
+print(holidays.strftime("%Y-%m-%d").tolist())
