@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,21 +12,20 @@ from datetime import datetime, timedelta
 
 # print((datetime.today() - timedelta(days=5)).date()) # gets the date 5 days before today
 
-
-chartDays = 10
+chartTimeFrame = '5min'
+chartDays = 5
 timeDiff = 6
 
 ticker = input('Enter a ticker ').upper()
 
 key = open('api_key.txt').read()
-config = {}
 
-config['session'] = True
-config['api_key'] = "8e0be47061fc0cc55149cd88aa4aa5843e31b4c8"
+config = {'session': True, 'api_key': "8e0be47061fc0cc55149cd88aa4aa5843e31b4c8"}
 
 client = TiingoClient(config)
 
-priceData = client.get_dataframe(ticker, startDate='2021-08-10', endDate='2021-08-16', frequency='1min')
+priceData = client.get_dataframe(ticker, startDate=datetime.today() - timedelta(days=chartDays),
+                                 endDate=datetime.today(), frequency=chartTimeFrame)
 print(priceData.head())
 
 priceData.columns = ['close', 'high', 'low', 'open']
@@ -57,8 +58,8 @@ fig.update_xaxes(
     rangebreaks=[
         # NOTE: Below values are bound (not single values), ie. hide x to y
         dict(bounds=["sat", "mon"]),  # hide weekends, eg. hide sat to before mon
-        dict(bounds=[14, 7.5], pattern="hour"),  # hide hours outside of 9.30am-4pm
-        # dict(values=["2020-12-25", "2021-01-01"])  # hide holidays (Christmas and New Year's, etc)
+        dict(bounds=[14, 7.5], pattern="hour"),
+        # dict(values=holidayDates)
     ]
 )
 
