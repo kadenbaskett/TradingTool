@@ -17,6 +17,18 @@ class BankHolidayCalendar(AbstractHolidayCalendar):
     ]
 
 
+# Creates custom holidays for all observed holiday dates by the U.S. stock market
+
 marketCalendar = BankHolidayCalendar()
-holidays = marketCalendar.holidays(start='2021-01-01', end='2024-12-31')
-print(holidays.strftime("%Y-%m-%d").tolist())
+
+
+# Generates observed holiday dates by the U.S. stock market over a specified start and end date
+class Calendar:
+    def __init__(self, start_date, end_date):
+        self.start_date = start_date
+        self.end_date = end_date
+
+    # Returns the list of holiday dates
+    def get_holidays(self):
+        holidays = marketCalendar.holidays(start=self.start_date, end=self.end_date)
+        return holidays.strftime("%Y-%m-%d").tolist()
