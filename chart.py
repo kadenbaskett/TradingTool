@@ -1,73 +1,82 @@
-import datetime
-
-import pandas as pd
-import numpy as np
-
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import mplfinance as mpf
-
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output, State
+import plotly.express as px
+import key
 from tiingo import TiingoClient
-
-from datetime import datetime, timedelta
-import datetime as dt
-
-# print((datetime.today() - timedelta(days=5)).date()) # gets the date 5 days before today
+import pandas as pd
+import plotly.graph_objs as go
 import market_holidays
+from datetime import datetime, timedelta
 
-chartTimeFrame = '4hour'
-chartDays = 150
-timeDiff = 6
+app = dash.Dash(__name__)
 
-ticker = input('Enter a ticker ').upper()
+app.layout = html.Div([
+    html.Link(
+        rel='stylesheet',
+        href='https://codepen.io/chriddyp/pen/bWLwgP.css'
+    ),
+    dcc.Input(id='input-box', value='SPY', type='text', placeholder='Enter a stock ticker', ),
+    html.Button('Enter', id='enter_button'),
+    html.Div(),
+    html.P('5 Calls a Minute'),
+    dcc.Graph(id='candle-graph', animate=True, style={"backgroundColor": "#1a2d46", 'color': '#ffffff'}, ),
+    html.Div([
+        html.P('Developed by: ', style={'display': 'inline', 'color': 'white'}),
+        html.A('Kaden Baskett', href='https://kadenbaskett.wixsite.com/mysite'),
+        html.P(' - ', style={'display': 'inline', 'color': 'white'}),
+        html.A('kadenbaskett@gmail.com', href='mailto:kadenbaskett@gmail.com')
+    ], className="twelve columns",
+        style={'fontsize': 18, 'padding-top': 20}
+    )
+])
 
-key = open('api_key.txt').read()
-
-config = {'session': True, 'api_key': "8e0be47061fc0cc55149cd88aa4aa5843e31b4c8"}
-
+api_key = key.api_key
+config = {'session': True, 'api_key': api_key}
 client = TiingoClient(config)
 
-priceData = client.get_dataframe(ticker, startDate=datetime.today() - timedelta(days=chartDays),
-                                 endDate=datetime.today(), frequency=chartTimeFrame)
-priceData.columns = ['close', 'high', 'low', 'open']
-
-priceData['TradeDate'] = priceData.index.date
-priceData['time'] = priceData.index.time
-
-# Adjusts times for different time zones
-priceData['date'] = priceData.index - timedelta(hours=timeDiff)
-priceData.sort_index(inplace=True)
+timeDiff = 6
+# chartFrequency = '5min'
 
 
-chartCalendar = market_holidays.Calendar("2020-01-01", "2021-12-31")
-holidayDates = chartCalendar.get_holidays()
+@app.callback(
+    Output('candle-graph', 'figure'),
+    [Input('enter_button', 'n_clicks')],
+    [State('input-box', 'value')])
+def update_figure(n_clicks, input_value):
+    ticker = input_value.upper()
+    price_data = client.get_dataframe(ticker, startDate="2021-08-19",
+                                      endDate="2021-08-20", frequency='5min')
 
-# priceData = priceData.loc[(datetime.today() - timedelta(days=chartDays)).date():]  # picks start date of data
+    price_data.index = price_data.index - timedelta(hours=timeDiff)
 
-# Create subplots and mention plot grid size
+    chartCalendar = market_holidays.Calendar("2020-01-01", "2021-12-31")
+    holidayDates = chartCalendar.get_holidays()
+
+    fig = go.Figure(go.Candlestick(
+        x=price_data.index,
+        open=price_data['open'],
+        high=price_data['high'],
+        low=price_data['low'],
+        close=price_data['close']
+
+    ))
+
+    fig.update_xaxes(
+        rangeslider_visible=False,
+        rangebreaks=[
+            # NOTE: Below values are bound (not single values), ie. hide x to y
+            dict(bounds=["sat", "mon"]),  # hide weekends, eg. hide sat to before mon
+            dict(bounds=[14, 7.5], pattern="hour"),
+            dict(values=holidayDates)
+        ]
+    )
+
+    fig.update_layout(title=ticker + " Analysis", template='plotly_dark', yaxis_title=ticker + " price (USD)")
+
+    return fig
 
 
-"""
- fig.add_trace(go.Bar(x=priceData['date'], y=priceData['volume'], showlegend=False, marker_color='rgb(255,255,255)'),
-             row=2, col=1)   
-             #adds volume sublot below
-"""
-# Creating the candlestick chart without volume subplot
-
-
-fig = go.Figure(data=[go.Candlestick(x=priceData['date'], open=priceData['open'], high=priceData['high'],
-                                     low=priceData['low'], close=priceData['close'])])
-
-fig.update_xaxes(
-    rangeslider_visible=False,
-    rangebreaks=[
-        # NOTE: Below values are bound (not single values), ie. hide x to y
-        dict(bounds=["sat", "mon"]),  # hide weekends, eg. hide sat to before mon
-        dict(bounds=[14, 7.5], pattern="hour"),
-        dict(values=holidayDates)
-    ]
-)
-
-fig.update_layout(title=ticker + ' Analysis', template='plotly_dark', yaxis_title=ticker + " price (USD)")
-fig.show()
+if __name__ == '__main__':
+    app.run_server(debug=True)
