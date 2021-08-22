@@ -17,11 +17,15 @@ app.layout = html.Div([
         rel='stylesheet',
         href='https://codepen.io/chriddyp/pen/bWLwgP.css'
     ),
-    dcc.Input(id='input-box', value='SPY', type='text', placeholder='Enter a stock ticker', ),
+    dcc.Input(id='input-box', value='SPY', type='text', placeholder='Enter a stock ticker'),
     html.Button('Enter', id='enter_button'),
     html.Div(),
-    html.P('5 Calls a Minute'),
+    html.P('4 Searches per Minute'),
     dcc.Graph(id='candle-graph', animate=True, style={"backgroundColor": "#1a2d46", 'color': '#ffffff'}, ),
+    dcc.Interval(
+        id='interval-component',
+        interval=1 * 60000,  # in milliseconds
+        n_intervals=0),
     html.Div([
         html.P('Developed by: ', style={'display': 'inline', 'color': 'white'}),
         html.A('Kaden Baskett', href='https://kadenbaskett.wixsite.com/mysite'),
@@ -29,25 +33,27 @@ app.layout = html.Div([
         html.A('kadenbaskett@gmail.com', href='mailto:kadenbaskett@gmail.com')
     ], className="twelve columns",
         style={'fontsize': 18, 'padding-top': 20}
-    )
+    ),
 ])
 
 api_key = key.api_key
 config = {'session': True, 'api_key': api_key}
 client = TiingoClient(config)
-
 timeDiff = 6
+
+
 # chartFrequency = '5min'
 
 
 @app.callback(
     Output('candle-graph', 'figure'),
-    [Input('enter_button', 'n_clicks')],
-    [State('input-box', 'value')])
-def update_figure(n_clicks, input_value):
+    [Input('enter_button', 'n_clicks'), Input('interval-component', 'n_intervals')],
+    state=[State(component_id='input-box', component_property='value')]
+)
+def update_figure(n, In_clicks, input_value):
     ticker = input_value.upper()
     price_data = client.get_dataframe(ticker, startDate="2021-08-19",
-                                      endDate="2021-08-20", frequency='5min')
+                                      endDate="2021-08-24", frequency='1min')
 
     price_data.index = price_data.index - timedelta(hours=timeDiff)
 
