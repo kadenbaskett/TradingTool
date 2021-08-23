@@ -18,18 +18,22 @@ app.title = "MEME  STOCK TRADER"
 
 server = app.server
 
-app_color = {"graph_bg": "#082255", "graph_line": "#007ACE"}
+app_color = {"graph_bg": "#082255", "graph_line": "#007ACE", "background": "#111111"}
 app.layout = html.Div(
     [
+        html.Link(
+            rel='stylesheet',
+            href='https://codepen.io/chriddyp/pen/bWLwgP.css'
+        ),
         # header
         html.Div(
             [
                 html.Div(
                     [
 
-                        html.H4("AMC Stock Analysis", className="app__header__title"),
+                        html.H4("Stock Price Analysis", className="app__header__title"),
                         html.P(
-                            "This app provides a real time chart for AMC moon stock.",
+                            "This application provides a real time chart for a inputed stock.",
                             className="app__header__title--grey",
                         ),
                         dcc.Input(id='input-box', value='AMC', type='text', placeholder='Enter a stock ticker'),
@@ -45,9 +49,11 @@ app.layout = html.Div(
                 # stock price
                 html.Div(
                     [
-                        html.Div(
-                            [html.H6("AMC", className="graph__title")]
-                        ),
+
+                        # html.Div(
+                        #     [html.H6("AMC", className="graph__title")]
+                        # ),
+
                         dcc.Graph(
                             id="stock-price",
                             # animate=True,
@@ -64,7 +70,7 @@ app.layout = html.Div(
                             n_intervals=0
                         )
                     ],
-                    className="two-thirds column stock__price__container"
+                    className="three-thirds column stock__price__container"
                 ),
             ],
             className="app__content"
