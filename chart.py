@@ -10,31 +10,68 @@ import plotly.graph_objs as go
 import market_holidays
 from datetime import datetime, timedelta
 
-app = dash.Dash(__name__)
+app = dash.Dash(
+    __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
+)
 
-app.layout = html.Div([
-    html.Link(
-        rel='stylesheet',
-        href='https://codepen.io/chriddyp/pen/bWLwgP.css'
-    ),
-    dcc.Input(id='input-box', value='SPY', type='text', placeholder='Enter a stock ticker'),
-    html.Button('Enter', id='enter_button'),
-    html.Div(),
-    html.P('4 Searches per Minute'),
-    dcc.Graph(id='candle-graph', animate=True, style={"backgroundColor": "#1a2d46", 'color': '#ffffff'}, ),
-    dcc.Interval(
-        id='interval-component',
-        interval=1 * 60000,  # in milliseconds
-        n_intervals=0),
-    html.Div([
-        html.P('Developed by: ', style={'display': 'inline', 'color': 'white'}),
-        html.A('Kaden Baskett', href='https://kadenbaskett.wixsite.com/mysite'),
-        html.P(' - ', style={'display': 'inline', 'color': 'white'}),
-        html.A('kadenbaskett@gmail.com', href='mailto:kadenbaskett@gmail.com')
-    ], className="twelve columns",
-        style={'fontsize': 18, 'padding-top': 20}
-    ),
-])
+app.title = "MEME  STOCK TRADER"
+
+server = app.server
+
+app_color = {"graph_bg": "#082255", "graph_line": "#007ACE"}
+app.layout = html.Div(
+    [
+        # header
+        html.Div(
+            [
+                html.Div(
+                    [
+
+                        html.H4("AMC Stock Analysis", className="app__header__title"),
+                        html.P(
+                            "This app provides a real time chart for AMC moon stock.",
+                            className="app__header__title--grey",
+                        ),
+                        dcc.Input(id='input-box', value='AMC', type='text', placeholder='Enter a stock ticker'),
+                        html.Button('Enter', id='enter_button'),
+                    ],
+                    className="app__header__desc"
+                ),
+            ],
+            className="app__header"
+        ),
+        html.Div(
+            [
+                # stock price
+                html.Div(
+                    [
+                        html.Div(
+                            [html.H6("AMC", className="graph__title")]
+                        ),
+                        dcc.Graph(
+                            id="stock-price",
+                            # animate=True,
+                            figure=dict(
+                                layout=dict(
+                                    plot_bgcolor=app_color["graph_bg"],
+                                    paper_bgcolor=app_color["graph_bg"]
+                                )
+                            )
+                        ),
+                        dcc.Interval(
+                            id="chart-update",
+                            interval=1 * 30000,
+                            n_intervals=0
+                        )
+                    ],
+                    className="two-thirds column stock__price__container"
+                ),
+            ],
+            className="app__content"
+        )
+    ],
+    className="app__container"
+)
 
 api_key = key.api_key
 config = {'session': True, 'api_key': api_key}
@@ -44,16 +81,15 @@ timeDiff = 6
 
 # chartFrequency = '5min'
 
-
 @app.callback(
-    Output('candle-graph', 'figure'),
-    [Input('enter_button', 'n_clicks'), Input('interval-component', 'n_intervals')],
-    state=[State(component_id='input-box', component_property='value')]
+    Output('stock-price', 'figure'),
+    [Input('chart-update', 'n_intervals'), Input('enter_button', 'n_clicks')],
+    [State('input-box', 'value')]
 )
-def update_figure(n, In_clicks, input_value):
+def update_figure(interval, n_clicks, input_value):
     ticker = input_value.upper()
-    price_data = client.get_dataframe(ticker, startDate="2021-08-19",
-                                      endDate="2021-08-24", frequency='1min')
+    price_data = client.get_dataframe(ticker, startDate=(datetime.today() - timedelta(days=3)).strftime("%m/%d/%Y"),
+                                      endDate=datetime.today().strftime("%m/%d/%Y"), frequency='1min')
 
     price_data.index = price_data.index - timedelta(hours=timeDiff)
 
