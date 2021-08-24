@@ -38,6 +38,17 @@ app.layout = html.Div(
                         ),
                         dcc.Input(id='input-box', value='AMC', type='text', placeholder='Enter a stock ticker'),
                         html.Button('Enter', id='enter_button'),
+                        dcc.DatePickerRange(id="date-picker",
+                                            start_date=datetime.today().strftime("%m/%d/%Y"),
+                                            end_date=datetime.today().strftime("%m/%d/%Y"),
+                                            start_date_placeholder_text="Select start date",
+                                            end_date_placeholder_text="Select end date",
+                                            min_date_allowed=datetime(2020, 1,
+                                                                      1),
+                                            initial_visible_month=datetime.today().strftime(
+                                                "%m/%d/%Y"),
+                                            max_date_allowed=datetime.today(),
+                                            )
                     ],
                     className="app__header__desc"
                 ),
@@ -89,13 +100,18 @@ timeDiff = 6
 
 @app.callback(
     Output('stock-price', 'figure'),
-    [Input('chart-update', 'n_intervals'), Input('enter_button', 'n_clicks')],
+    [Input('chart-update', 'n_intervals'), Input('enter_button', 'n_clicks'), Input('date-picker', 'start_date'),
+     Input('date-picker', 'end_date')],
     [State('input-box', 'value')]
 )
-def update_figure(interval, n_clicks, input_value):
+def update_figure(interval, n_clicks, start_date, end_date, input_value):
     ticker = input_value.upper()
-    price_data = client.get_dataframe(ticker, startDate=(datetime.today() - timedelta(days=3)).strftime("%m/%d/%Y"),
-                                      endDate=datetime.today().strftime("%m/%d/%Y"), frequency='1min')
+
+    # price_data = client.get_dataframe(ticker, startDate=(datetime.today()).strftime("%m/%d/%Y"),
+    #                                  endDate=datetime.today().strftime("%m/%d/%Y"), frequency='1min')
+
+    price_data = client.get_dataframe(ticker, start_date, end_date,
+                                      frequency='1min')
 
     price_data.index = price_data.index - timedelta(hours=timeDiff)
 
