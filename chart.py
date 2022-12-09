@@ -9,6 +9,7 @@ config = {'session': True, 'api_key': api_key}
 client = TiingoClient(config)
 timeDiff = 6
 
+# stuff
 
 ticker = "AMC"
 
@@ -16,7 +17,7 @@ ticker = "AMC"
 #                                  endDate=datetime.today().strftime("%m/%d/%Y"), frequency='1min')
 
 price_data = client.get_dataframe(ticker, start_date, end_date,
-                                 frequency='1min')
+                                  frequency='1min')
 
 price_data.index = price_data.index - timedelta(hours=timeDiff)
 
@@ -28,4 +29,3 @@ with pd.option_context('display.max_rows', None,
                        'display.precision', 3,
                        ):
     print(price_data)
-
